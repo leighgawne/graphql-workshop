@@ -9,8 +9,13 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.EntityFrameworkCore;
 using ConferencePlanner.GraphQL.Data;
+using ConferencePlanner.GraphQL.DataLoader;
+using ConferencePlanner.GraphQL.Types;
+using ConferencePlanner.GraphQL.Speakers;
+using ConferencePlanner.GraphQL.Sessions;
+using ConferencePlanner.GraphQL.Tracks;
 
-namespace GraphQL
+namespace ConferencePlanner.GraphQL
 {
     public class Startup
     {
@@ -18,11 +23,26 @@ namespace GraphQL
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddDbContext<ApplicationDbContext>(options => options.UseSqlite("Data Source=conferences.db"));
+            services.AddPooledDbContextFactory<ApplicationDbContext>(options => options.UseSqlite("Data Source=conferences.db"));
 
             services
                 .AddGraphQLServer()
-                .AddQueryType<Query>();
+                .AddQueryType(d => d.Name("Query"))
+                    .AddType<SessionQueries>()
+                    .AddType<SpeakerQueries>()
+                    .AddType<TrackQueries>()
+                .AddMutationType(d => d.Name("Mutation"))
+                    .AddTypeExtension<SessionMutations>()
+                    .AddTypeExtension<SpeakerMutations>()
+                    .AddTypeExtension<TrackMutations>()
+                .AddType<AttendeeType>()
+                .AddType<SessionType>()
+                .AddType<SpeakerType>()
+                .AddType<TrackType>()
+                .EnableRelaySupport()
+                .AddDataLoader<SessionByIdDataLoader>()
+                .AddDataLoader<SpeakerByIdDataLoader>()
+                .AddDataLoader<TrackByIdDataLoader>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
